@@ -46,10 +46,9 @@ python ./SCRIPTS/train.py run --model ags_tiny_unet_50k --data_path ./DATA/
 
 
 # Models Score
-#TODO
 The table below contains the score results for the the models
 
-| Model | Train Score (mean F1-score) | Valid Score (F1-score) | Test Score (F1-score) |
-|-------|-------------------|----------------|---------------------------------------|
-| tiny_unet_50k | 0.96 | 0.82 | 0.68 |
-| tiny_unet_100k | 0.97 | 0.82 | 0.68 |
+| Model | Train Score (mean F1-score) | Valid Score (F1-score) |
+|-------|-------------------|----------------|
+| tiny_unet_50k | 0.94 - 0.78 | 0.94 - 0.77 |
+| tiny_unet_100k | 0.94 - 0.79 | 0.84 - 0.78 |
