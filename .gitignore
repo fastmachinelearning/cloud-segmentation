@@ -27,6 +27,7 @@ venv.bak/
 *.png
 *.tif[f]
 *.npz
+*.yaml
 
 !*requirements.txt
 
