@@ -1,5 +1,5 @@
 import onnx
-from collections import defaultdict
+import pytest
 
 def get_tensor_shapes(model):
     """Returns a dict mapping tensor name to shape"""
@@ -34,15 +34,23 @@ def load_model_graph(onnx_path):
         })
     return node_descriptions
 
-def test_models_are_structurally_identical():
-    pytorch_model_path = "pytorch_model.onnx"
-    reference_model_path = "reference_model.onnx"
+@pytest.mark.parametrize(
+    "model_dut_path, model_ref_path",
+    [
+        ("MODEL/onnx_models_dut/pytorch_manual_50k.onnx", "MODEL/onnx_models_ref/ags_tiny_unet_50k.onnx"),
+        ("MODEL/onnx_models_dut/pytorch_manual_100k.onnx", "MODEL/onnx_models_ref/ags_tiny_unet_100k.onnx"),
+    ]
+)
+def test_models_are_structurally_identical(model_dut_path, model_ref_path):
+    
+    import os
+    print(os.getcwd())
+    
+    onnx.save(onnx.shape_inference.infer_shapes(onnx.load(model_dut_path)), model_dut_path)
+    onnx.save(onnx.shape_inference.infer_shapes(onnx.load(model_ref_path)), model_ref_path)
 
-    onnx.save(onnx.shape_inference.infer_shapes(onnx.load(pytorch_model_path)), pytorch_model_path)
-    onnx.save(onnx.shape_inference.infer_shapes(onnx.load(reference_model_path)), reference_model_path)
-
-    pytorch_model_graph = load_model_graph(pytorch_model_path)
-    reference_model_graph = load_model_graph(reference_model_path)
+    pytorch_model_graph = load_model_graph(model_dut_path)
+    reference_model_graph = load_model_graph(model_ref_path)
 
     assert len(pytorch_model_graph) == len(reference_model_graph), \
         f"Node count mismatch: {len(pytorch_model_graph)} vs {len(reference_model_graph)}"

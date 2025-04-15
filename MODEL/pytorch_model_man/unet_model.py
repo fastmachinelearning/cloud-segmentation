@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
+from brevitas.export import export_qonnx
+from brevitas.graph.quantize import COMPUTE_LAYER_MAP, QUANT_ACT_MAP, QUANT_IDENTITY_MAP, UNSIGNED_ACT_TUPLE, preprocess_for_quantize, quantize
 
 class DepthwiseSeparableBlock(nn.Module):
     def __init__(self, in_ch_depth, out_ch_depth, out_ch_point, out_relu=True): # assuming output channels of first block are same as input channels for the first block
@@ -69,7 +71,7 @@ class DecoderBlock(nn.Module):
         return self.up(x) if self.out_resize else x
 
 
-class UNetModel(nn.Module):
+class UNetModel50K(nn.Module):
     def __init__(self):
         super().__init__()
         self.enc1 = EncoderBlock(3, 3, 16, 16, 16, in_maxpool=False)
@@ -98,3 +100,67 @@ class UNetModel(nn.Module):
         x = self.dec2(x, skip3)
         x = self.dec3(x, skip2)
         return self.dec4(x, skip1)
+
+class UNetModel100k(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.enc1 = EncoderBlock(3, 3, 32, 32, 32, in_maxpool=False)
+        self.enc2 = EncoderBlock(32, 32, 32, 32, 64)
+        self.enc3 = EncoderBlock(64, 64, 64, 64, 64)
+        self.enc4 = EncoderBlock(64, 64, 64, 64, 64)
+
+        self.enc_middle = EncoderBlock(64, 64, 64, 64, 96, duplicate_output=False)
+        self.dec_middle = DecoderBlock(96, 96, 96, 96, 64, in_concat=False)
+
+        self.dec1 = DecoderBlock(128, 128, 64, 64, 64)
+        self.dec2 = DecoderBlock(128, 128, 64, 64, 64)
+        self.dec3 = DecoderBlock(128, 128, 64, 64, 32)
+        self.dec4 = DecoderBlock(64, 64, 32, 32, 2, out_resize=False, out_relu=False)
+
+    def forward(self, x):
+        x, skip1 = self.enc1(x)
+        x, skip2 = self.enc2(x)
+        x, skip3 = self.enc3(x)
+        x, skip4 = self.enc4(x)
+
+        x, _ = self.enc_middle(x)
+        x = self.dec_middle(x, None)
+
+        x = self.dec1(x, skip4)
+        x = self.dec2(x, skip3)
+        x = self.dec3(x, skip2)
+        return self.dec4(x, skip1)
+    
+def get_quantized_model(model):
+    model = preprocess_for_quantize(
+        model,
+        trace_model=True,
+        relu6_to_relu=True,
+        equalize_iters=0,
+        equalize_merge_bias=True,
+        merge_bn=True,
+    )
+
+    qmodel = quantize(
+        model,
+        quant_identity_map=QUANT_IDENTITY_MAP,
+        compute_layer_map=COMPUTE_LAYER_MAP,
+        quant_act_map=QUANT_ACT_MAP,
+        unsigned_act_tuple=UNSIGNED_ACT_TUPLE,
+        requantize_layer_handler_output=False,
+    )
+
+    return qmodel
+
+def save_quantized_model(model, path, input_shape=(1, 3, 256, 256)):
+    qmodel = get_quantized_model(model)
+    inp = torch.randn(input_shape)
+    export_qonnx(
+        qmodel,
+        path,
+        inp,
+        opset_version=11,
+        input_names=["input"],
+        output_names=["output"],
+    )
+    return qmodel
