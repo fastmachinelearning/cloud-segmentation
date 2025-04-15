@@ -38,3 +38,6 @@ venv.bak/
 
 # VSCode
 .vscode/
+
+MODEL/pytorch_model_gen/
+MODEL/unet_model_gen.py
