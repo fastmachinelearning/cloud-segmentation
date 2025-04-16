@@ -43,9 +43,6 @@ def load_model_graph(onnx_path):
 )
 def test_models_are_structurally_identical(model_dut_path, model_ref_path):
     
-    import os
-    print(os.getcwd())
-    
     onnx.save(onnx.shape_inference.infer_shapes(onnx.load(model_dut_path)), model_dut_path)
     onnx.save(onnx.shape_inference.infer_shapes(onnx.load(model_ref_path)), model_ref_path)
 

@@ -155,12 +155,11 @@ def get_quantized_model(model):
 def save_quantized_model(model, path, input_shape=(1, 3, 256, 256)):
     qmodel = get_quantized_model(model)
     inp = torch.randn(input_shape)
+    qmodel(inp)  # collect scale factors
+    qmodel.eval()
     export_qonnx(
         qmodel,
-        path,
         inp,
-        opset_version=11,
-        input_names=["input"],
-        output_names=["output"],
+        path,
     )
     return qmodel
