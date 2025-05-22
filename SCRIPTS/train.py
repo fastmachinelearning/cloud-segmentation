@@ -27,6 +27,7 @@ from ignite.utils import manual_seed, setup_logger
 from torch import nn
 from torch.amp import autocast
 from torch.cuda.amp import GradScaler
+from utils.quant_utils.save_handler_qonnx import CheckpointQONNX, DiskSaverQONNX
 from utils.loss import TrainingLoss
 from torchvision import tv_tensors
 
@@ -190,6 +191,7 @@ def run(
     img_mean: List[float] = [0.0, 0.0, 0.0],
     img_rescale: List[float] = [8657.0, 8657.0, 8657.0],
     model: str = "ags_tiny_unet_100k",
+    quant_config: str = None,
     class_weights: List[float] = [0.1, 0.9],
     batch_size: int = 28,
     weight_decay: float = 2e-4,
@@ -217,6 +219,7 @@ def run(
         img_mean: List[float]: Mean to be substracted to each channel,
         img_rescale: List[float]: std used to rescale images,
         model (str): model name (from torchvision) to setup model to train. Default, "ags_tiny_unet_100k".
+        quant_config: str: quantization method to apply. Default, None. Possible values, "8bit_fix", None.
         batch_size (int): total batch size. Default, 16.
         weight_decay (float): weight decay. Default, 1e-4.
         num_workers (int): number of workers in the data loader. Default, 8.
@@ -285,7 +288,7 @@ def get_dataflow(config):
 
 
 def initialize(config):
-    model = get_model(config["model"])
+    model = get_model(config["model"], config["quant_config"])
     # Adapt model for distributed settings if configured
     model = idist.auto_model(model)
 

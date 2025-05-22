@@ -11,6 +11,7 @@ from ignite.metrics.metrics_lambda import MetricsLambda
 from onnx2torch import convert
 from torch import nn
 from torchvision.transforms import v2 as T
+from utils.quant_utils.quantize import quant_model
 
 def get_transform(
     mean: Sequence[float],
@@ -125,7 +126,7 @@ def load_onnx_model(onnx_model_path):
     return torch_model
 
 
-def get_model(name):
+def get_model(name, quant_config=None):
     if name.lower() == "ags_tiny_unet_100k":
         model = load_onnx_model(
             "/nas/PROJETS/HE_EDGE_SPAICE/EXPORT_ARCH_CERN/ags_tiny_unet_100k.onnx"
@@ -140,5 +141,8 @@ def get_model(name):
         raise ValueError(
             f"{name=}, should be `ags_tiny_unet_100k` or `ags_tiny_unet_50k`"
         )
+
+    if quant_config is not None:
+        model = quant_model(quant_config, model)
 
     return model

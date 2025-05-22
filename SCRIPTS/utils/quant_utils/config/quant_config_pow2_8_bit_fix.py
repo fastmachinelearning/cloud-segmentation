@@ -1,12 +1,12 @@
 from torch import nn
 import brevitas.nn as qnn
-from utils.quant_config.fix_bit_width_quantizer import (
+from utils.quant_utils.quantizer.fix_bit_width_quantizer import (
     Int8WeightPerTensorPoTMSE,
     Int8BiasPerTensorPoTMSE,
     Int8ActPerTensorPoTMSE,
     Uint8ActPerTensorPoTMSE,
 )
-from utils.quant_config.quant_activation import QuantLeakyReLU
+from utils.quant_utils.quant_activation import QuantLeakyReLU
 
 
 def get_config():
